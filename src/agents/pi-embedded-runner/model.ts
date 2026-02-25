@@ -82,6 +82,8 @@ export function resolveModel(
     }
     // OpenRouter is a pass-through proxy — any model ID available on OpenRouter
     // should work without being pre-registered in the local catalog.
+    // Most OpenRouter models support vision; default to image-capable so
+    // gateway clients can send multimodal input without silent drops.
     if (normalizedProvider === "openrouter") {
       const fallbackModel: Model<Api> = normalizeModelCompat({
         id: modelId,
@@ -90,7 +92,7 @@ export function resolveModel(
         provider,
         baseUrl: "https://openrouter.ai/api/v1",
         reasoning: false,
-        input: ["text"],
+        input: ["text", "image"],
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: DEFAULT_CONTEXT_TOKENS,
         // Align with OPENROUTER_DEFAULT_MAX_TOKENS in models-config.providers.ts
