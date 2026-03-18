@@ -6,7 +6,7 @@ import { resolveApiKeyForProvider } from "../agents/model-auth.js";
 import {
   findModelInCatalog,
   loadModelCatalog,
-  modelSupportsVision,
+  modelSupportsNativeVision,
 } from "../agents/model-catalog.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { OpenClawConfig } from "../config/config.js";
@@ -710,7 +710,7 @@ export async function runCapability(params: {
   if (capability === "image" && activeProvider) {
     const catalog = await loadModelCatalog({ config: cfg });
     const entry = findModelInCatalog(catalog, activeProvider, params.activeModel?.model ?? "");
-    if (modelSupportsVision(entry)) {
+    if (modelSupportsNativeVision(entry)) {
       if (shouldLogVerbose()) {
         logVerbose("Skipping image understanding: primary model supports vision natively");
       }

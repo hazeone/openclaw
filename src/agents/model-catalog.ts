@@ -1,4 +1,5 @@
 import { type OpenClawConfig, loadConfig } from "../config/config.js";
+import type { ModelCompatConfig } from "../config/types.models.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveOpenClawAgentDir } from "./agent-paths.js";
 import { ensureOpenClawModelsJson } from "./models-config.js";
@@ -12,6 +13,7 @@ export type ModelCatalogEntry = {
   contextWindow?: number;
   reasoning?: boolean;
   input?: Array<"text" | "image">;
+  compat?: ModelCompatConfig;
 };
 
 type DiscoveredModel = {
@@ -21,6 +23,7 @@ type DiscoveredModel = {
   contextWindow?: number;
   reasoning?: boolean;
   input?: Array<"text" | "image">;
+  compat?: ModelCompatConfig;
 };
 
 type PiSdkModule = typeof import("./pi-model-discovery.js");
@@ -111,7 +114,10 @@ function readConfiguredOptInProviderModels(config: OpenClawConfig): ModelCatalog
       const reasoningRaw = (configuredModel as { reasoning?: unknown }).reasoning;
       const reasoning = typeof reasoningRaw === "boolean" ? reasoningRaw : undefined;
       const input = normalizeConfiguredModelInput((configuredModel as { input?: unknown }).input);
-      out.push({ id, name, provider, contextWindow, reasoning, input });
+      const compatRaw = (configuredModel as { compat?: unknown }).compat;
+      const compat =
+        compatRaw && typeof compatRaw === "object" ? (compatRaw as ModelCompatConfig) : undefined;
+      out.push({ id, name, provider, contextWindow, reasoning, input, compat });
     }
   }
 
@@ -224,7 +230,8 @@ export async function loadModelCatalog(params?: {
             : undefined;
         const reasoning = typeof entry?.reasoning === "boolean" ? entry.reasoning : undefined;
         const input = Array.isArray(entry?.input) ? entry.input : undefined;
-        models.push({ id, name, provider, contextWindow, reasoning, input });
+        const compat = entry?.compat && typeof entry.compat === "object" ? entry.compat : undefined;
+        models.push({ id, name, provider, contextWindow, reasoning, input, compat });
       }
       mergeConfiguredOptInProviderModels({ config: cfg, models });
       applyOpenAICodexSparkFallback(models);
@@ -257,6 +264,16 @@ export async function loadModelCatalog(params?: {
  */
 export function modelSupportsVision(entry: ModelCatalogEntry | undefined): boolean {
   return entry?.input?.includes("image") ?? false;
+}
+
+/**
+ * Some fallback/router models advertise image input optimistically so that
+ * explicit multimodal requests can still reach the upstream provider. Treat
+ * those as "unverified" for native vision features like prompt-path auto-load
+ * and sticker/image fallback bypasses.
+ */
+export function modelSupportsNativeVision(entry: ModelCatalogEntry | undefined): boolean {
+  return modelSupportsVision(entry) && entry?.compat?.visionCapabilitiesVerified !== false;
 }
 
 /**

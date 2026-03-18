@@ -9,6 +9,7 @@ import {
   detectImageReferences,
   loadImageFromRef,
   modelSupportsImages,
+  modelSupportsNativePromptImages,
 } from "./images.js";
 
 describe("detectImageReferences", () => {
@@ -206,6 +207,23 @@ describe("modelSupportsImages", () => {
   });
 });
 
+describe("modelSupportsNativePromptImages", () => {
+  it("returns true when image input is present and verified", () => {
+    const model = { input: ["text", "image"], compat: { visionCapabilitiesVerified: true } };
+    expect(modelSupportsNativePromptImages(model)).toBe(true);
+  });
+
+  it("returns true when image input is present and verification is unspecified", () => {
+    const model = { input: ["text", "image"] };
+    expect(modelSupportsNativePromptImages(model)).toBe(true);
+  });
+
+  it("returns false when image input is marked unverified", () => {
+    const model = { input: ["text", "image"], compat: { visionCapabilitiesVerified: false } };
+    expect(modelSupportsNativePromptImages(model)).toBe(false);
+  });
+});
+
 describe("loadImageFromRef", () => {
   it("allows sandbox-validated host paths outside default media roots", async () => {
     const homeDir = os.homedir();
@@ -281,6 +299,30 @@ describe("detectAndLoadPromptImages", () => {
 
     expect(result.images).toHaveLength(0);
     expect(result.detectedRefs).toHaveLength(0);
+  });
+
+  it("skips auto-loading prompt images when vision metadata is unverified", async () => {
+    const existing = [{ type: "image" as const, data: "abc", mimeType: "image/png" }];
+    const result = await detectAndLoadPromptImages({
+      prompt: "check /tmp/test.png",
+      workspaceDir: "/tmp",
+      model: {
+        input: ["text", "image"],
+        compat: { visionCapabilitiesVerified: false },
+      },
+      existingImages: existing,
+      historyMessages: [
+        {
+          role: "user",
+          content: [{ type: "text", text: "See /tmp/history.png" }],
+        },
+      ],
+    });
+
+    expect(result.images).toHaveLength(1);
+    expect(result.images[0]).toEqual(existing[0]);
+    expect(result.detectedRefs).toHaveLength(0);
+    expect(result.historyImagesByIndex.size).toBe(0);
   });
 
   it("skips history messages that already include image content", async () => {

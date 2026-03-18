@@ -268,6 +268,19 @@ export function modelSupportsImages(model: { input?: string[] }): boolean {
   return model.input?.includes("image") ?? false;
 }
 
+/**
+ * Some models advertise image input optimistically (for example router
+ * fallbacks) so explicit multimodal requests can still be forwarded upstream.
+ * Native prompt image auto-loading is more invasive, so only enable it when
+ * image capability is present and not explicitly marked unverified.
+ */
+export function modelSupportsNativePromptImages(model: {
+  input?: string[];
+  compat?: { visionCapabilitiesVerified?: boolean };
+}): boolean {
+  return modelSupportsImages(model) && model.compat?.visionCapabilitiesVerified !== false;
+}
+
 function extractTextFromMessage(message: unknown): string {
   if (!message || typeof message !== "object") {
     return "";
@@ -387,11 +400,12 @@ export async function detectAndLoadPromptImages(params: {
   loadedCount: number;
   skippedCount: number;
 }> {
-  // When model doesn't advertise image input, skip file-path detection but
-  // still pass through explicitly provided images (e.g. base64 attachments
-  // from gateway clients). Silently dropping user-provided images is worse
-  // than letting the upstream API reject them with a clear error.
-  if (!modelSupportsImages(params.model)) {
+  // Skip native prompt/history image auto-loading when the model either does
+  // not advertise image input or only has unverified vision metadata. Still
+  // pass through explicitly provided images (e.g. base64 attachments from
+  // gateway clients). Silently dropping user-provided images is worse than
+  // letting the upstream API reject them with a clear error.
+  if (!modelSupportsNativePromptImages(params.model)) {
     return {
       images: params.existingImages ?? [],
       historyImagesByIndex: new Map(),

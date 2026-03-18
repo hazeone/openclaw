@@ -3,7 +3,7 @@ import { resolveAckReaction } from "../agents/identity.js";
 import {
   findModelInCatalog,
   loadModelCatalog,
-  modelSupportsVision,
+  modelSupportsNativeVision,
 } from "../agents/model-catalog.js";
 import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import { hasControlCommand } from "../auto-reply/command-detection.js";
@@ -127,7 +127,7 @@ async function resolveStickerVisionSupport(params: {
     if (!entry) {
       return false;
     }
-    return modelSupportsVision(entry);
+    return modelSupportsNativeVision(entry);
   } catch {
     return false;
   }

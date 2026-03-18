@@ -5,7 +5,7 @@ import type { ModelCatalogEntry } from "../agents/model-catalog.js";
 import {
   findModelInCatalog,
   loadModelCatalog,
-  modelSupportsVision,
+  modelSupportsNativeVision,
 } from "../agents/model-catalog.js";
 import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import type { OpenClawConfig } from "../config/config.js";
@@ -165,7 +165,7 @@ export async function describeStickerImage(params: DescribeStickerParams): Promi
   try {
     catalog = await loadModelCatalog({ config: cfg });
     const entry = findModelInCatalog(catalog, defaultModel.provider, defaultModel.model);
-    const supportsVision = modelSupportsVision(entry);
+    const supportsVision = modelSupportsNativeVision(entry);
     if (supportsVision) {
       activeModel = { provider: defaultModel.provider, model: defaultModel.model };
     }
@@ -185,7 +185,7 @@ export async function describeStickerImage(params: DescribeStickerParams): Promi
   const selectCatalogModel = (provider: string) => {
     const entries = catalog.filter(
       (entry) =>
-        entry.provider.toLowerCase() === provider.toLowerCase() && modelSupportsVision(entry),
+        entry.provider.toLowerCase() === provider.toLowerCase() && modelSupportsNativeVision(entry),
     );
     if (entries.length === 0) {
       return undefined;

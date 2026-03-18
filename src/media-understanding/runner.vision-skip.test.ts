@@ -8,14 +8,16 @@ import {
   runCapability,
 } from "./runner.js";
 
-const catalog = [
-  {
-    id: "gpt-4.1",
-    name: "GPT-4.1",
-    provider: "openai",
-    input: ["text", "image"] as const,
-  },
-];
+const loadModelCatalogMock = vi.hoisted(() =>
+  vi.fn(async () => [
+    {
+      id: "gpt-4.1",
+      name: "GPT-4.1",
+      provider: "openai",
+      input: ["text", "image"] as const,
+    },
+  ]),
+);
 
 vi.mock("../agents/model-catalog.js", async () => {
   const actual = await vi.importActual<typeof import("../agents/model-catalog.js")>(
@@ -23,7 +25,7 @@ vi.mock("../agents/model-catalog.js", async () => {
   );
   return {
     ...actual,
-    loadModelCatalog: vi.fn(async () => catalog),
+    loadModelCatalog: loadModelCatalogMock,
   };
 });
 
@@ -51,6 +53,41 @@ describe("runCapability image skip", () => {
       expect(result.decision.attachments[0]?.attachmentIndex).toBe(0);
       expect(result.decision.attachments[0]?.attempts[0]?.outcome).toBe("skipped");
       expect(result.decision.attachments[0]?.attempts[0]?.reason).toBe(
+        "primary model supports vision natively",
+      );
+    } finally {
+      await cache.cleanup();
+    }
+  });
+
+  it("does not skip image understanding when vision metadata is unverified", async () => {
+    loadModelCatalogMock.mockResolvedValueOnce([
+      {
+        id: "openrouter/auto",
+        name: "OpenRouter Auto",
+        provider: "openrouter",
+        input: ["text", "image"] as const,
+        compat: { visionCapabilitiesVerified: false },
+      },
+    ]);
+
+    const ctx: MsgContext = { MediaPath: "/tmp/image.png", MediaType: "image/png" };
+    const media = normalizeMediaAttachments(ctx);
+    const cache = createMediaAttachmentCache(media);
+    const cfg = {} as OpenClawConfig;
+
+    try {
+      const result = await runCapability({
+        capability: "image",
+        cfg,
+        ctx,
+        attachments: cache,
+        media,
+        providerRegistry: buildProviderRegistry(),
+        activeModel: { provider: "openrouter", model: "openrouter/auto" },
+      });
+
+      expect(result.decision.attachments[0]?.attempts[0]?.reason).not.toBe(
         "primary model supports vision natively",
       );
     } finally {

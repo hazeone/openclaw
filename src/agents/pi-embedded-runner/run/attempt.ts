@@ -113,7 +113,7 @@ import {
   selectCompactionTimeoutSnapshot,
   shouldFlagCompactionTimeout,
 } from "./compaction-timeout.js";
-import { detectAndLoadPromptImages } from "./images.js";
+import { detectAndLoadPromptImages, modelSupportsNativePromptImages } from "./images.js";
 import type { EmbeddedRunAttemptParams, EmbeddedRunAttemptResult } from "./types.js";
 
 type PromptBuildHookRunner = {
@@ -380,7 +380,7 @@ export async function runEmbeddedAttempt(
       sessionAgentId,
     });
     // Check if the model supports native image input
-    const modelHasVision = params.model.input?.includes("image") ?? false;
+    const modelHasVision = modelSupportsNativePromptImages(params.model);
     const toolsRaw = params.disableTools
       ? []
       : createOpenClawCodingTools({

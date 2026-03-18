@@ -3,7 +3,7 @@ import { resolveAgentDir } from "../agents/agent-scope.js";
 import {
   findModelInCatalog,
   loadModelCatalog,
-  modelSupportsVision,
+  modelSupportsNativeVision,
 } from "../agents/model-catalog.js";
 import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import { resolveChunkMode } from "../auto-reply/chunk.js";
@@ -54,7 +54,7 @@ async function resolveStickerVisionSupport(cfg: OpenClawConfig, agentId: string)
     if (!entry) {
       return false;
     }
-    return modelSupportsVision(entry);
+    return modelSupportsNativeVision(entry);
   } catch {
     return false;
   }

@@ -693,6 +693,12 @@ function buildOpenrouterProvider(): ProviderConfig {
         // See: openclaw/openclaw#24851
         reasoning: false,
         input: ["text", "image"],
+        compat: {
+          // "auto" is a router target, not a specific authoritative model
+          // capability record. Keep explicit multimodal requests flowing, but
+          // avoid assuming native prompt image auto-injection is always safe.
+          visionCapabilitiesVerified: false,
+        },
         cost: OPENROUTER_DEFAULT_COST,
         contextWindow: OPENROUTER_DEFAULT_CONTEXT_WINDOW,
         maxTokens: OPENROUTER_DEFAULT_MAX_TOKENS,

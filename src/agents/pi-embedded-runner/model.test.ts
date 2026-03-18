@@ -335,6 +335,7 @@ describe("resolveModel", () => {
       api: "openai-completions",
       baseUrl: "https://openrouter.ai/api/v1",
       input: expect.arrayContaining(["text", "image"]),
+      compat: { visionCapabilitiesVerified: false },
     });
   });
 });

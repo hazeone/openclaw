@@ -13,6 +13,12 @@ export type ModelCompatConfig = {
   supportsReasoningEffort?: boolean;
   supportsUsageInStreaming?: boolean;
   supportsStrictMode?: boolean;
+  /**
+   * Marks whether native image capability was confirmed by an authoritative
+   * catalog/provider response. When false, callers should avoid assuming local
+   * prompt image auto-injection or vision-specific fallbacks are safe.
+   */
+  visionCapabilitiesVerified?: boolean;
   maxTokensField?: "max_completion_tokens" | "max_tokens";
   thinkingFormat?: "openai" | "zai" | "qwen";
   requiresToolResultName?: boolean;
